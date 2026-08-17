@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phase Modulation Index Suppression Calculator</title>
+
+    <script src="https://unpkg.com/mathjs@15.0.0/lib/browser/math.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bessel@1.0.2/bessel.js"></script>
+</head>
+
+<body>
+    <h1>Phase Modulation Index Suppression Calculator</h1>
+
+    For calculating modulation index suppressions of residual-carrier schemes.<br>
+    [1] <a href="https://deepspace.jpl.nasa.gov/dsndocs/810-005/214/214C.pdf">
+        https://deepspace.jpl.nasa.gov/dsndocs/810-005/214/214C.pdf
+    </a>
+
+    <p>
+    <table>
+        <tr>
+            <td><b>Subcarrier type</b></td>
+            <td><b>Subcarrier shaping</b></td>
+            <td><b>Modulation index</b></td>
+            <td><b>Units</b></td>
+            <td><b>Amplitude</b></td>
+        </tr>
+
+        <tr>
+            <td>NARROWBAND DATA</td>
+            <td>
+                <select id="data_shaping">
+                    <option value="sinusoidal">Sinusoidal</option>
+                    <option value="square">Square</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" id="data_index" step="any" value="0">
+            </td>
+            <td>
+                <select id="data_angle_unit">
+                    <option value="radians">Radians</option>
+                    <option value="degrees">Degrees</option>
+                </select>
+            </td>
+            <td>
+                <select id="data_amplitude">
+                    <option value="RMS">RMS</option>
+                    <option value="Peak">Peak</option>
+                </select>
+            </td>
+        </tr>
+
+        <tr>
+            <td>RANGING</td>
+            <td>
+                <select id="ranging_shaping">
+                    <option value="sinusoidal">Sinusoidal</option>
+                    <option value="square">Square</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" id="ranging_index" step="any" value="0">
+            </td>
+            <td>
+                <select id="ranging_angle_unit">
+                    <option value="radians">Radians</option>
+                    <option value="degrees">Degrees</option>
+                </select>
+            </td>
+            <td>
+                <select id="ranging_amplitude">
+                    <option value="RMS">RMS</option>
+                    <option value="Peak">Peak</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    </p>
+
+    <p>
+        <button onclick="calculate()">Calculate!</button>
+    </p>
+
+    <p>
+    <table>
+        <tr>
+            <td><b>Residual carrier level [dBc] = </b></td>
+            <td>
+                <!-- <span id="carrier_suppression"></span> linear = -->
+                <b><span id="carrier_suppression_db"></span></b>
+            </td>
+        </tr>
+
+        <tr>
+            <td><b>Data suppression [dBc] = </b></td>
+            <td>
+                <!-- <span id="data_suppression"></span> linear = -->
+                <b><span id="data_suppression_db"></span></b>
+            </td>
+        </tr>
+
+        <tr>
+            <td><b>Ranging suppression [dBc] = </b></td>
+            <td>
+                <!-- <span id="ranging_suppression"></span> linear = -->
+                <b><span id="ranging_suppression_db"></span></b>
+            </td>
+        </tr>
+    </table>
+    <i> ...where dBc = decibels relative to the total signal power. </i>
+    </p>
+
+<script>
+function calculate() {
+    let dataIndex = parseFloat(document.getElementById("data_index").value);
+    let rangingIndex = parseFloat(document.getElementById("ranging_index").value);
+
+    const dataShaping = document.getElementById("data_shaping").value;
+    const dataAngleUnit = document.getElementById("data_angle_unit").value;
+    const dataAmplitude = document.getElementById("data_amplitude").value;
+
+    const rangingShaping = document.getElementById("ranging_shaping").value;
+    const rangingAngleUnit = document.getElementById("ranging_angle_unit").value;
+    const rangingAmplitude = document.getElementById("ranging_amplitude").value;
+
+    let alpha_data = 0;
+    let alpha_ranging = 0;
+    let beta_data = 0;
+    let beta_ranging = 0;
+
+    let carrierSuppressionLinear = 0;
+    let carrierSuppressionDecibel = 0;
+    let dataSuppressionLinear = 0;
+    let dataSuppressionDecibel = 0;
+    let rangingSuppressionLinear = 0;
+    let rangingSuppressionDecibel = 0;
+
+    if (isNaN(dataIndex) && isNaN(rangingIndex)) {
+        alert("Please enter valid numbers for modulation indices.");
+        return;
+    }
+
+    if (isNaN(dataIndex)) {
+        dataIndex = 0;
+    }
+
+    if (isNaN(rangingIndex)) {
+        rangingIndex = 0;
+    }
+
+    if (dataAngleUnit === "degrees") {
+        dataIndex = math.unit(dataIndex, "deg").toNumber("rad");
+    }
+
+    if (rangingAngleUnit === "degrees") {
+        rangingIndex = math.unit(rangingIndex, "deg").toNumber("rad");
+    }
+
+    if (dataAmplitude === "RMS") {
+        dataIndex *= math.sqrt(2);
+    }
+
+    if (rangingAmplitude === "RMS") {
+        rangingIndex *= math.sqrt(2);
+    }
+
+    if (dataShaping === "sinusoidal") {
+        alpha_data = BESSEL.besselj(dataIndex, 0);
+        beta_data = BESSEL.besselj(dataIndex, 1);
+    } else if (dataShaping === "square") {
+        alpha_data = math.cos(dataIndex);
+        beta_data = math.sin(dataIndex);
+    }
+
+    if (rangingShaping === "sinusoidal") {
+        alpha_ranging = BESSEL.besselj(rangingIndex, 0);
+        beta_ranging = BESSEL.besselj(rangingIndex, 1);
+    } else if (rangingShaping === "square") {
+        alpha_ranging = math.cos(rangingIndex);
+        beta_ranging = math.sin(rangingIndex);
+    }
+
+    carrierSuppressionLinear =
+        math.pow(alpha_data, 2) *
+        math.pow(alpha_ranging, 2);
+
+    dataSuppressionLinear =
+        math.pow(beta_data, 2) *
+        math.pow(alpha_ranging, 2);
+
+    rangingSuppressionLinear =
+        math.pow(alpha_data, 2) *
+        math.pow(beta_ranging, 2);
+
+    carrierSuppressionDecibel =
+        10 * math.log10(carrierSuppressionLinear);
+
+    dataSuppressionDecibel =
+        10 * math.log10(dataSuppressionLinear);
+
+    rangingSuppressionDecibel =
+        10 * math.log10(rangingSuppressionLinear);
+
+    // document.getElementById("carrier_suppression").textContent =
+    //     carrierSuppressionLinear.toFixed(4);
+
+    document.getElementById("carrier_suppression_db").textContent =
+        carrierSuppressionDecibel.toFixed(2);
+
+    // document.getElementById("data_suppression").textContent =
+    //     dataSuppressionLinear.toFixed(4);
+
+    document.getElementById("data_suppression_db").textContent =
+        dataSuppressionDecibel.toFixed(2);
+
+    // document.getElementById("ranging_suppression").textContent =
+    //     rangingSuppressionLinear.toFixed(4);
+
+    document.getElementById("ranging_suppression_db").textContent =
+        rangingSuppressionDecibel.toFixed(2);
+}
+</script>
+
+</body>
+</html>
