@@ -166,7 +166,7 @@ function calculate() {
 
     if (dataShaping === "sinusoidal") {
         alpha_data = BESSEL.besselj(dataIndex, 0);
-        beta_data = BESSEL.besselj(dataIndex, 1);
+        beta_data = math.sqrt(2)*BESSEL.besselj(dataIndex, 1);
     } else if (dataShaping === "square") {
         alpha_data = math.cos(dataIndex);
         beta_data = math.sin(dataIndex);
@@ -174,7 +174,7 @@ function calculate() {
 
     if (rangingShaping === "sinusoidal") {
         alpha_ranging = BESSEL.besselj(rangingIndex, 0);
-        beta_ranging = BESSEL.besselj(rangingIndex, 1);
+        beta_ranging = math.sqrt(2)*BESSEL.besselj(rangingIndex, 1);
     } else if (rangingShaping === "square") {
         alpha_ranging = math.cos(rangingIndex);
         beta_ranging = math.sin(rangingIndex);
