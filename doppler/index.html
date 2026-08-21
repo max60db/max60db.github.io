@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        Return to <a href="../index.html">max60dB.com</a> home page.<br>
+        <h1>Doppler Effect Calculator</h1>
+        <p>For calculating doppler effect, accounting for common spacecraft assumptions and orders of magnitude.<br>
+        [1] <a href="https://en.wikipedia.org/wiki/Doppler_effect">https://en.wikipedia.org/wiki/Doppler_effect</a></p>
+
+        <p>
+            <table>
+                <tr>
+                    <td><b>Wave velocity</b></td>
+                    <td><input type="number" id="wave_velocity_mps" step="any" value="299792458"> [m/s]</td>
+                </tr>
+                <tr>
+                    <td><b>Spacecraft radial velocity</b></td>
+                    <td><input type="number" id="spacecraft_velocity_kmps" step="any" value="0"> [km/s]</td>
+                    <td><button onclick="setLEOVelocity()">||v<sub>C</sub>|| @ 200km (7.79 km/s)</button></td>
+                </tr>
+                <tr>
+                    <td><b>Observer radial velocity</b></td>
+                    <td><input type="number" id="observer_velocity_kmps" step="any" value="0"> [km/s]</td>
+                    <td><button onclick="setEarthVelocity()">2&pi;r<sub>E</sub>/T<sub>sid</sub> (0.465 km/s)</button></td>
+                </tr>
+                <tr>
+                    <td><b>Signal frequency</b></td>
+                    <td><input type="number" id="signal_frequency" step="any" value="0">
+                        <select id="signal_frequency_unit">
+                            <option value="kHz">kHz</option>
+                            <option selected value="MHz">MHz</option>
+                            <option value="GHz">GHz</option>
+                        </select> 
+                    </td>
+                </tr>
+            </table>
+            <i>Spacecraft radial velocity and observer radial velocity are both positive in the same direction.</i>
+        </p>
+        <button onclick="calculateDoppler()">Calculate!</button>
+        <p>
+            <table>
+                <tr>
+                    <b>
+                        <td>Doppler shifted frequency </td>
+                        <td>
+                            <select id="doppler_frequency_unit">
+                                <option value="kHz">kHz</option>
+                                <option selected value="MHz">MHz</option>
+                                <option value="GHz">GHz</option>
+                            </select> =
+                        </td>
+                        <td><span id="doppler_frequency"></span>
+                    </b>
+                </tr>
+
+                <tr>
+                    <b>
+                        <td>Doppler shifted frequency delta </td>
+                        <td>
+                            <select id="doppler_delta_unit">
+                                <option value="mHz">mHz</option>
+                                <option value="Hz">Hz</option>
+                                <option selected value="kHz">kHz</option>
+                            </select> =
+                        </td>
+                        <td><span id="doppler_delta"></span>
+                    </b>
+                </tr>
+            </table>
+        </p>
+    </body>
+
+<script>
+    function setEarthVelocity() {
+        document.getElementById("observer_velocity_kmps").value = 0.465;
+    }
+    function setLEOVelocity() {
+        document.getElementById("spacecraft_velocity_kmps").value = 7.79;
+    }
+</script>
+
+<script>
+    function calculateDoppler(){
+        const waveVelocity = parseFloat(document.getElementById("wave_velocity_mps").value);
+        const spacecraftVelocity = parseFloat(document.getElementById("spacecraft_velocity_kmps").value) * 1e3;
+        const observerVelocity = parseFloat(document.getElementById("observer_velocity_kmps").value) * 1e3;
+
+        let signalFrequency = parseFloat(document.getElementById("signal_frequency").value);
+        const signalFrequencyUnit = document.getElementById("signal_frequency_unit").value;
+        switch (signalFrequencyUnit) {
+            case "kHz": signalFrequency *= 1e3; break;
+            case "MHz": signalFrequency *= 1e6; break;
+            case "GHz": signalFrequency *= 1e9; break;
+        }
+
+        const relativeVelocity = spacecraftVelocity - observerVelocity;
+
+        const dopplerShiftedFrequency = signalFrequency * ((waveVelocity + relativeVelocity) / (waveVelocity - relativeVelocity));
+        let dopplerDelta = dopplerShiftedFrequency - signalFrequency;
+        let dopplerFrequency = dopplerShiftedFrequency;
+
+        const dopplerFrequencyUnit = document.getElementById("doppler_frequency_unit").value;
+        switch (dopplerFrequencyUnit) {
+            case "kHz": dopplerFrequency /= 1e3; break;
+            case "MHz": dopplerFrequency /= 1e6; break;
+            case "GHz": dopplerFrequency /= 1e9; break;
+        }
+
+        const dopplerDeltaUnit = document.getElementById("doppler_delta_unit").value;
+        switch (dopplerDeltaUnit) {
+            case "mHz": dopplerDelta *= 1e3; break;
+            case "Hz": break;
+            case "kHz": dopplerDelta /= 1e3; break;
+        }
+
+        document.getElementById("doppler_frequency").textContent =
+            dopplerFrequency.toFixed(10);
+
+        document.getElementById("doppler_delta").textContent =
+            dopplerDelta.toFixed(10);
+    }
+</script>
+
+
+</html>
