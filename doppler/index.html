@@ -3,29 +3,57 @@
     <body>
         Return to <a href="../index.html">max60dB.com</a> home page.<br>
         <h1>Doppler Effect Calculator</h1>
-        <p>For calculating doppler effect, accounting for common spacecraft assumptions and orders of magnitude.<br>
+        Some helpful constants:
+        <ul>
+            <li>Earth's equatorial velocity: 2&pi;r<sub>E</sub>/T<sub>sid</sub> = 0.465 km/s</li>
+            <li>LEO orbital velocity: 7.78 km/s</li>
+            <li>Earth escape velocity: 11.2 km/s</li>
+        </ul>
         [1] <a href="https://en.wikipedia.org/wiki/Doppler_effect">https://en.wikipedia.org/wiki/Doppler_effect</a></p>
 
         <p>
             <table>
                 <tr>
+                    <td><b>PARAMETER</b></td>
+                    <td><b>VALUE</b></td>
+                    <td><b>UNITS</b></td>
+                    <td><b></b></td>
+                    <td><b>ADD POS/NEG DELTA</b></td>
+                    <td><b>DELTA UNITS</b></td>
+                </tr>
+                <tr>
                     <td><b>Wave velocity</b></td>
-                    <td><input type="number" id="wave_velocity_mps" step="any" value="299792458"> [m/s]</td>
+                    <td><input type="number" id="wave_velocity_mps" value="299792458"></td><td>[m/s]</td>
                 </tr>
                 <tr>
-                    <td><b>Spacecraft radial velocity</b></td>
-                    <td><input type="number" id="spacecraft_velocity_kmps" step="any" value="0"> [km/s]</td>
-                    <td><button onclick="setLEOVelocity()">||v<sub>C</sub>|| @ 200km (7.79 km/s)</button></td>
-                </tr>
-                <tr>
-                    <td><b>Observer radial velocity</b></td>
-                    <td><input type="number" id="observer_velocity_kmps" step="any" value="0"> [km/s]</td>
-                    <td><button onclick="setEarthVelocity()">2&pi;r<sub>E</sub>/T<sub>sid</sub> (0.465 km/s)</button></td>
+                    <td><select id="relative_velocity_mode">
+                            <option value="relative_velocity_mode_range_rate"><b>Range rate (two-way)</b></option>
+                            <option value="relative_velocity_mode_one_way"><b>Relative velocity (one-way)</b></option>
+                        </select></td>
+                    <td><input type="number" id="relative_velocity" value="0"></td>
+                    <td><select id="relative_velocity_unit">
+                            <option selected value="km/s">km/s</option>
+                            <option value="m/s">m/s</option>
+                    </select> </td>
+                    <td><button onclick="addRelativeVelocity()">+</button></td>
+                    <td><input type="number" id="delta_relative_velocity" value="0"></td>
+                    <td><select id="delta_relative_velocity_unit">
+                            <option selected value="km/s">km/s</option>
+                            <option value="m/s">m/s</option>
+                    </select> </td>
                 </tr>
                 <tr>
                     <td><b>Signal frequency</b></td>
-                    <td><input type="number" id="signal_frequency" step="any" value="0">
-                        <select id="signal_frequency_unit">
+                    <td><input type="number" id="signal_frequency" value="0"></td>
+                    <td><select id="signal_frequency_unit">
+                            <option value="kHz">kHz</option>
+                            <option selected value="MHz">MHz</option>
+                            <option value="GHz">GHz</option>
+                        </select> 
+                    </td>
+                    <td><button onclick="addSignalFrequency()">+</button></td>
+                    <td><input type="number" id="delta_signal_frequency" value="0"></td>
+                    <td><select id="delta_signal_frequency_unit">
                             <option value="kHz">kHz</option>
                             <option selected value="MHz">MHz</option>
                             <option value="GHz">GHz</option>
@@ -33,36 +61,39 @@
                     </td>
                 </tr>
             </table>
-            <i>Spacecraft radial velocity and observer radial velocity are both positive in the same direction.</i>
         </p>
-        <button onclick="calculateDoppler()">Calculate!</button>
+        <p><i>Relative velocity is defined as positive when the source and observer are moving away from each other.</i></p>
+        <p>
+        <button onclick="calculateDoppler()">&darr; Calculate doppler shift from relative velocity</button>
+        <button onclick="calculateInverseDoppler()">&uarr; Calculate relative velocity from doppler shift</button>
+        </p>
         <p>
             <table>
                 <tr>
                     <b>
-                        <td>Doppler shifted frequency </td>
+                        <td><b>Doppler shifted frequency</b></td>
+                        <td><input type="number" id="doppler_frequency" value="0"></td>
                         <td>
                             <select id="doppler_frequency_unit">
                                 <option value="kHz">kHz</option>
                                 <option selected value="MHz">MHz</option>
                                 <option value="GHz">GHz</option>
-                            </select> =
+                            </select>
                         </td>
-                        <td><span id="doppler_frequency"></span>
                     </b>
                 </tr>
 
                 <tr>
                     <b>
-                        <td>Doppler shifted frequency delta </td>
+                        <td><b>Doppler shifted frequency delta</b></td>
+                        <td><input type="number" id="doppler_delta" value="0"></td>
                         <td>
                             <select id="doppler_delta_unit">
                                 <option value="mHz">mHz</option>
                                 <option value="Hz">Hz</option>
                                 <option selected value="kHz">kHz</option>
-                            </select> =
+                            </select>
                         </td>
-                        <td><span id="doppler_delta"></span>
                     </b>
                 </tr>
             </table>
@@ -70,19 +101,61 @@
     </body>
 
 <script>
-    function setEarthVelocity() {
-        document.getElementById("observer_velocity_kmps").value = 0.465;
+    function addRelativeVelocity() {
+        let relativeVelocity = parseFloat(document.getElementById("relative_velocity").value);
+        const relativeVelocityUnit = document.getElementById("relative_velocity_unit").value;
+        let deltaVelocity = parseFloat(document.getElementById("delta_relative_velocity").value);
+        const deltaVelocityUnit = document.getElementById("delta_relative_velocity_unit").value;
+        switch (relativeVelocityUnit) {
+            case "m/s": relativeVelocity *= 1; break;
+            case "km/s": relativeVelocity *= 1e3; break;
+        }
+        switch (deltaVelocityUnit) {
+            case "m/s": deltaVelocity *= 1; break;
+            case "km/s": deltaVelocity *= 1e3; break;
+        }
+        let newRelativeVelocity = relativeVelocity + deltaVelocity;
+        switch (relativeVelocityUnit) {
+            case "m/s": newRelativeVelocity /= 1; break;
+            case "km/s": newRelativeVelocity /= 1e3; break;
+        }
+        document.getElementById("relative_velocity").value = newRelativeVelocity;
     }
-    function setLEOVelocity() {
-        document.getElementById("spacecraft_velocity_kmps").value = 7.79;
+
+    function addSignalFrequency() {
+        let signalFrequency = parseFloat(document.getElementById("signal_frequency").value);
+        const signalFrequencyUnit = document.getElementById("signal_frequency_unit").value;
+        let deltaFrequency = parseFloat(document.getElementById("delta_signal_frequency").value);
+        const deltaFrequencyUnit = document.getElementById("delta_signal_frequency_unit").value;
+        switch (signalFrequencyUnit) {
+            case "kHz": signalFrequency *= 1e3; break;
+            case "MHz": signalFrequency *= 1e6; break;
+            case "GHz": signalFrequency *= 1e9; break;
+        }
+        switch (deltaFrequencyUnit) {
+            case "kHz": deltaFrequency *= 1e3; break;
+            case "MHz": deltaFrequency *= 1e6; break;
+            case "GHz": deltaFrequency *= 1e9; break;
+        }
+        let newSignalFrequency = signalFrequency + deltaFrequency;
+        switch (signalFrequencyUnit) {
+            case "kHz": newSignalFrequency /= 1e3; break;
+            case "MHz": newSignalFrequency /= 1e6; break;
+            case "GHz": newSignalFrequency /= 1e9; break;
+        }
+        document.getElementById("signal_frequency").value = newSignalFrequency;
     }
 </script>
 
 <script>
     function calculateDoppler(){
         const waveVelocity = parseFloat(document.getElementById("wave_velocity_mps").value);
-        const spacecraftVelocity = parseFloat(document.getElementById("spacecraft_velocity_kmps").value) * 1e3;
-        const observerVelocity = parseFloat(document.getElementById("observer_velocity_kmps").value) * 1e3;
+        let relativeVelocity = parseFloat(document.getElementById("relative_velocity").value);
+        const relativeVelocityUnit = document.getElementById("relative_velocity_unit").value;
+        switch (relativeVelocityUnit) {
+            case "m/s": break;
+            case "km/s": relativeVelocity *= 1e3; break;
+        }
 
         let signalFrequency = parseFloat(document.getElementById("signal_frequency").value);
         const signalFrequencyUnit = document.getElementById("signal_frequency_unit").value;
@@ -92,8 +165,9 @@
             case "GHz": signalFrequency *= 1e9; break;
         }
 
-        const relativeVelocity = spacecraftVelocity - observerVelocity;
-
+        if (document.getElementById("relative_velocity_mode").value === "relative_velocity_mode_one_way") {
+            relativeVelocity /= 2; // For one-way velocity, we need to halve the relative velocity for the Doppler calculation
+        }
         const dopplerShiftedFrequency = signalFrequency * ((waveVelocity + relativeVelocity) / (waveVelocity - relativeVelocity));
         let dopplerDelta = dopplerShiftedFrequency - signalFrequency;
         let dopplerFrequency = dopplerShiftedFrequency;
@@ -112,11 +186,43 @@
             case "kHz": dopplerDelta /= 1e3; break;
         }
 
-        document.getElementById("doppler_frequency").textContent =
+        document.getElementById("doppler_frequency").value =
             dopplerFrequency.toFixed(10);
 
-        document.getElementById("doppler_delta").textContent =
+        document.getElementById("doppler_delta").value =
             dopplerDelta.toFixed(10);
+    }
+
+    function calculateInverseDoppler(){
+        const waveVelocity = parseFloat(document.getElementById("wave_velocity_mps").value);
+        let signalFrequency = parseFloat(document.getElementById("signal_frequency").value);
+        const signalFrequencyUnit = document.getElementById("signal_frequency_unit").value;
+        switch (signalFrequencyUnit) {
+            case "kHz": signalFrequency *= 1e3; break;
+            case "MHz": signalFrequency *= 1e6; break;
+            case "GHz": signalFrequency *= 1e9; break;
+        }
+
+        let dopplerFrequency = parseFloat(document.getElementById("doppler_frequency").value);
+        const dopplerFrequencyUnit = document.getElementById("doppler_frequency_unit").value;
+        switch (dopplerFrequencyUnit) {
+            case "kHz": dopplerFrequency *= 1e3; break;
+            case "MHz": dopplerFrequency *= 1e6; break;
+            case "GHz": dopplerFrequency *= 1e9; break;
+        }
+
+        let relativeVelocity = waveVelocity * (dopplerFrequency - signalFrequency) /
+            (dopplerFrequency + signalFrequency);
+        if (document.getElementById("relative_velocity_mode").value === "relative_velocity_mode_one_way") {
+            relativeVelocity *= 2;
+        }
+
+        const relativeVelocityUnit = document.getElementById("relative_velocity_unit").value;
+        switch (relativeVelocityUnit) {
+            case "m/s": break;
+            case "km/s": relativeVelocity /= 1e3; break;
+        }
+        document.getElementById("relative_velocity").value = relativeVelocity;
     }
 </script>
 
