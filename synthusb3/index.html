@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SynthUSB3 | max60dB</title>
+</head>
+<body>
+    Return to <a href="../index.html">max60dB.com</a> home page.<br>
+    <h1>SynthUSB3 control</h1>
+    <p>Program frequency, output level, and startup state over USB.<br>
+    Buy one here!: <a href="https://windfreaktech.com/product/synthusb3-6ghz-rf-signal-generator/">https://windfreaktech.com/product/synthusb3-6ghz-rf-signal-generator/</a></p>
+
+    <h2>Device connection</h2>
+    <p>
+        <strong id="connection-state" aria-live="polite">Not connected</strong><br>
+        <span id="connection-detail">Web Serial requires Chrome or Edge on HTTPS or localhost.</span>
+    </p>
+    <p>
+        <button id="connect-button" type="button">Close existing and connect device</button>
+        <button id="disconnect-button" type="button" disabled>Disconnect</button>
+    </p>
+    <p id="notice" role="status" aria-live="polite"></p>
+
+    <h2>Commands</h2>
+    <p>See this page for a full command reference: </p>
+
+    <form id="frequency-form">
+        <p>
+            <label for="frequency"><b>Set Frequency in MHz:</b></label><br>
+            <input id="frequency" name="frequency" type="number" min="12.5" max="6400" step="0.0000001" value="1000" required>
+            MHz <button class="send-button" type="submit" disabled>Send</button>
+        </p>
+    </form>
+
+    <form id="power-form">
+        <p>
+            <label for="power"><b>Set Power in dBm:</b></label><br>
+            <input id="power" name="power" type="number" min="-50" max="10" step="0.01" value="0" required>
+            dBm <button class="send-button" type="submit" disabled>Send</button>
+        </p>
+    </form>
+
+    <form id="pll-form">
+        <p>
+            <label for="pll"><b>Set PLL Power On:</b></label><br>
+            <select id="pll" name="pll">
+                <option value="1">On</option>
+                <option value="0">Off</option>
+            </select>
+            <button class="send-button" type="submit" disabled>Send</button>
+        </p>
+    </form>
+
+    <form id="eeprom-form">
+        <p>
+            <label for="eeprom-button"><b>Program all Settings to Nonvolatile Memory (EEPROM):</b></label><br>
+			This saves the current device state for power-up. Verify the settings before writing -- you can brick your device with this command!<br>
+            <button id="eeprom-button" type="button" disabled>Write settings to EEPROM</button>
+        </p>
+    </form>
+
+    <p><i>Frequency and power changes take effect immediately. EEPROM writes are permanent until overwritten.</i></p>
+
+    <h2>Device status</h2>
+    <p>
+        <span id="status-updated">Not read yet</span>
+        <button id="refresh-button" type="button" disabled>Refresh status</button>
+    </p>
+    <table>
+        <thead>
+            <tr><th scope="col">Setting</th><th scope="col">Device value</th></tr>
+        </thead>
+        <tbody id="status-body">
+            <tr><td colspan="2">Connect to the SynthUSB3, then refresh to read its settings.</td></tr>
+        </tbody>
+    </table>
+
+    <script src="./synthusb3.js"></script>
+    <script src="./app.js"></script>
+</body>
+</html>
