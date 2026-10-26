@@ -122,8 +122,8 @@
 
 <script>
 function calculate() {
-    const dataIndex = parseFloat(document.getElementById("data_index").value);
-    const rangingIndex = parseFloat(document.getElementById("ranging_index").value);
+    let dataIndex = parseFloat(document.getElementById("data_index").value);
+    let rangingIndex = parseFloat(document.getElementById("ranging_index").value);
 
     const dataShaping = document.getElementById("data_shaping").value;
     const dataAngleUnit = document.getElementById("data_angle_unit").value;
@@ -166,11 +166,11 @@ function calculate() {
         rangingIndex = math.unit(rangingIndex, "deg").toNumber("rad");
     }
 
-    if (dataAmplitude === "RMS") {
+    if (dataAmplitude === "RMS" && dataShaping === "sinusoidal") {
         dataIndex *= math.sqrt(2);
     }
 
-    if (rangingAmplitude === "RMS") {
+    if (rangingAmplitude === "RMS" && rangingShaping === "sinusoidal") {
         rangingIndex *= math.sqrt(2);
     }
 
@@ -236,5 +236,3 @@ function calculate() {
 
 
 </html>
-
-
