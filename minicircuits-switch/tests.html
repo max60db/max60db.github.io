@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Mini-Circuits switch tests</title></head>
+<body>
+    <h1>Mini-Circuits switch test results</h1>
+    <p id="summary">Tests are running...</p>
+    <ol id="results"></ol>
+    <input id="address"><input id="port" value="80"><input id="password">
+    <button id="test-button"></button><button id="refresh-button"></button>
+    <strong id="connection-state"></strong><code id="last-command"></code><code id="last-response"></code>
+    <p id="notice"></p><select id="switch-count"><option value="1">1</option></select>
+    <select id="port-count"><option value="2">2</option><option value="4">4</option><option value="6">6</option></select>
+    <button id="auto-identify-button"></button><div id="switch-controls"></div>
+    <span id="status-updated"></span><tbody id="status-body"></tbody>
+    <script src="./switch.js"></script>
+    <script src="./tests.js"></script>
+</body>
+</html>

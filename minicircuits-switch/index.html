@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mini-Circuits Switch | max60dB</title>
+</head>
+<body>
+    <p>Return to <a href="../index.html">max60dB.com</a> home page</p>
+    <h1>Mini-Circuits switch control</h1>
+    <p>Program Mini-Circuits mechanical switch matrix state over HTTP.<br>
+    Buy one here: <a href="https://www.minicircuits.com/WebStore/RF-Mechanical-Switch-Systems.html" target="_blank">https://www.minicircuits.com/WebStore/RF-Mechanical-Switch-Systems.html</a><br>
+    [1] <a href="https://www.minicircuits.com/softwaredownload/Prog_Manual-2-Switch.pdf" target="_blank">https://www.minicircuits.com/softwaredownload/Prog_Manual-2-Switch.pdf</a></p>
+
+    <h2>Connection</h2>
+    <p>
+        <label for="address">Address:</label>
+        <input id="address" type="text" inputmode="url" autocomplete="off">
+        <label for="port">HTTP port:</label>
+        <input id="port" type="number" min="1" max="65535" value="80">
+        <label for="password">Password:</label>
+        <input id="password" type="password" autocomplete="off">
+    </p>
+    <p><button id="test-button" type="button">Test connection</button></p>
+    <p>
+        <strong>Connection status:</strong> <span id="connection-state">Not connected</span><br>
+        <strong>Last command sent:</strong> <span id="last-command">None</span><br>
+        <strong>Last command response:</strong> <span id="last-response">None</span>
+    </p>
+
+    <h2>Switch configuration</h2>
+    <p>Choose the switch and port counts manually, or use Auto identify to query the model name.</p>
+    <table>
+        <tbody>
+            <tr>
+                <th scope="row" style="text-align: left;">Number of switches:</th>
+                <td><select id="switch-count">
+                    <option value="">Select</option>
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                </select></td>
+            </tr>
+            <tr>
+                <th scope="row" style="text-align: left;">Number of ports per switch:</th>
+                <td><select id="port-count">
+                    <option value="">Select</option>
+                    <option value="2">2 (SPDT)</option><option value="4">4 (SP4T)</option><option value="6">6 (SP6T)</option>
+                </select></td>
+            </tr>
+            <tr><th scope="row" style="text-align: left;"></th><td colspan="2"><button id="auto-identify-button" type="button" style="width: 100%;">Auto identify</button></td></tr>
+        </tbody>
+    </table>
+
+    <h2>Switch controls</h2>
+    <div id="switch-controls">
+        <p>Choose a switch configuration to load controls.</p>
+    </div>
+
+    <h2>Device status</h2>
+    <p><span id="status-updated">Not read yet</span>
+        <button id="refresh-button" type="button">Refresh status</button>
+    </p>
+    <table>
+        <thead><tr><th scope="col" style="text-align: left;">Setting</th><th scope="col" style="text-align: left;">Device value</th></tr></thead>
+        <tbody id="status-body">
+            <tr><td colspan="2">Refresh status to read the device.</td></tr>
+        </tbody>
+    </table>
+
+    <script src="./switch.js"></script>
+</body>
+</html>
