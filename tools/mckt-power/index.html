@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mini-Circuits power meter | max60dB</title>
+</head>
+<body>
+    <p>Return to <a href="../index.html">max60dB.com</a> home page</p>
+    <h1>Mini-Circuits power meter control</h1>
+    <p>Read a Mini-Circuits power sensor over its HTTP/SCPI interface.<br>
+    Buy one here: <a href=""https://www.minicircuits.com/WebStore/RF-Smart-Power-Sensors.html" target="_blank">https://www.minicircuits.com/WebStore/RF-Smart-Power-Sensors.html</a><br>
+    [1] <a href="https://www.minicircuits.com/softwaredownload/Prog_Manual-4-Power_Meter.pdf" target="_blank">https://www.minicircuits.com/softwaredownload/Prog_Manual-4-Power_Meter.pdf</a></p>
+
+    <h2>Connection</h2>
+    <p>
+        <label for="address">Address:</label>
+        <input id="address" type="text" inputmode="url" autocomplete="off">
+        <label for="port">HTTP port:</label>
+        <input id="port" type="number" min="1" max="65535" value="80">
+    </p>
+    <p><button id="test-button" type="button">Test connection</button></p>
+    <p>
+        <strong>Connection status:</strong> <span id="connection-state">Not connected</span><br>
+        <strong>Last command sent:</strong> <span id="last-command">None</span><br>
+        <strong>Last command response:</strong> <span id="last-response">None</span>
+    </p>
+    <p id="notice" role="status" aria-live="polite"></p>
+
+    <h2>Control</h2>
+    <table>
+        <thead><tr><th scope="col" style="text-align: left;">Control</th><th scope="col" style="text-align: left;">Value</th><th scope="col" style="text-align: left;">Actions</th></tr></thead>
+        <tbody>
+            <tr>
+                <th scope="row" style="text-align: left;">Power</th>
+                <td id="power-value">Not read</td>
+                <td>
+                    <button id="power-button" type="button">Read power</button>
+                    <button id="auto-refresh-button" type="button">Auto refresh every 0.5 sec</button>
+                    <button id="disable-auto-refresh-button" type="button">Disable auto refresh</button>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" style="text-align: left;">Compensation frequency</th>
+                <td><input id="compensation-frequency" type="number" min="0" step="any" placeholder="MHz"></td>
+                <td><button id="set-compensation-frequency-button" type="button">Set</button> MHz</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Device status</h2>
+    <p>
+        <span id="status-updated">Not read yet</span>
+        <button id="refresh-button" type="button">Refresh status</button>
+    </p>
+    <table>
+        <thead><tr><th scope="col" style="text-align: left;">Setting</th><th scope="col" style="text-align: left;">Device value</th></tr></thead>
+        <tbody id="status-body">
+            <tr><td colspan="2">Refresh status to read the device.</td></tr>
+        </tbody>
+    </table>
+
+    <script src="./power.js"></script>
+</body>
+</html>

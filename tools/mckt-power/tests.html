@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Mini-Circuits power meter tests</title></head>
+<body>
+    <h1>Mini-Circuits power meter test results</h1>
+    <p id="summary">Tests are running...</p>
+    <ol id="results"></ol>
+    <input id="address"><input id="port" value="80">
+    <button id="test-button"></button><button id="power-button"></button>
+    <button id="auto-refresh-button"></button><button id="disable-auto-refresh-button"></button><button id="refresh-button"></button>
+    <span id="connection-state"></span><span id="last-command"></span><span id="last-response"></span>
+    <span id="notice"></span><span id="power-value"></span>
+    <table><tbody>
+        <tr><td><input id="compensation-frequency"><button id="set-compensation-frequency-button"></button></td></tr>
+    </tbody></table>
+    <span id="status-updated"></span>
+    <table><tbody id="status-body"></tbody></table>
+    <script src="./power.js"></script><script src="./tests.js"></script>
+</body>
+</html>
