@@ -8,18 +8,27 @@
 <body>
     <p>Return to <a href="../index.html">max60dB.com</a> home page</p>
     <h1>Mini-Circuits switch control</h1>
-    <p>Program Mini-Circuits mechanical switch matrix state over HTTP.<br>
+    <p>Program Mini-Circuits mechanical switch matrix state over Ethernet or USB.<br>
     Buy one here: <a href="https://www.minicircuits.com/WebStore/RF-Mechanical-Switch-Systems.html" target="_blank">https://www.minicircuits.com/WebStore/RF-Mechanical-Switch-Systems.html</a><br>
     [1] <a href="https://www.minicircuits.com/softwaredownload/Prog_Manual-2-Switch.pdf" target="_blank">https://www.minicircuits.com/softwaredownload/Prog_Manual-2-Switch.pdf</a></p>
 
     <h2>Connection</h2>
     <p>
-        <label for="address">Address:</label>
-        <input id="address" type="text" inputmode="url" autocomplete="off">
-        <label for="port">HTTP port:</label>
-        <input id="port" type="number" min="1" max="65535" value="80">
-        <label for="password">Password:</label>
-        <input id="password" type="password" autocomplete="off">
+        <label for="connection-type">Connection:</label>
+        <select id="connection-type">
+            <option value="ethernet">Ethernet</option>
+            <option value="usb">USB</option>
+        </select>
+    </p>
+    <p>
+        <span id="ethernet-settings">
+            <label for="address">Address:</label>
+            <input id="address" type="text" inputmode="url" autocomplete="off">
+            <label for="port">HTTP port:</label>
+            <input id="port" type="number" min="1" max="65535" value="80">
+            <label for="password">Password:</label>
+            <input id="password" type="password" autocomplete="off">
+        </span>
     </p>
     <p><button id="test-button" type="button">Test connection</button></p>
     <p>
@@ -45,6 +54,7 @@
                 <td><select id="port-count">
                     <option value="">Select</option>
                     <option value="2">2 (SPDT)</option><option value="4">4 (SP4T)</option><option value="6">6 (SP6T)</option>
+                    <option value="8">8 (SP8T)</option>
                 </select></td>
             </tr>
             <tr><th scope="row" style="text-align: left;"></th><td colspan="2"><button id="auto-identify-button" type="button" style="width: 100%;">Auto identify</button></td></tr>
@@ -67,6 +77,7 @@
         </tbody>
     </table>
 
+    <script src="./switch-usb.js"></script>
     <script src="./switch.js"></script>
 </body>
 </html>

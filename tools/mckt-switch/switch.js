@@ -4,6 +4,7 @@
     const $ = (id) => document.getElementById(id);
     const info = { model: "", serial: "", firmware: "" };
     let connected = false;
+    let usbClient = null;
     let requestChain = Promise.resolve();
     let statusReadFailed = false;
 
@@ -16,6 +17,10 @@
 
     function setConnectionStatus(message) {
         $("connection-state").textContent = message;
+    }
+
+    function isUsbConnection() {
+        return $("connection-type").value === "usb";
     }
 
     function setCommandField(id, value) {
@@ -40,9 +45,21 @@
     async function send(command) {
         if (!/^[\x20-\x7e]{1,63}$/.test(command)) throw new Error("Command must be 1-63 printable ASCII characters.");
         return queued(async () => {
+            const time = () => new Date().toLocaleTimeString();
+            setCommandField("last-command", `${command} (${time()})`);
+            if (isUsbConnection()) {
+                if (!usbClient) throw new Error("Connect to a Mini-Circuits switch over USB first.");
+                try {
+                    const text = await usbClient.send(command);
+                    setCommandField("last-response", `${text || "empty response"} (${time()})`);
+                    return text;
+                } catch (error) {
+                    setCommandField("last-response", `${error.message} (${time()})`);
+                    throw error;
+                }
+            }
             const password = $("password").value;
             const request = password ? `${password};${command}` : command;
-            setCommandField("last-command", `${command} (${new Date().toLocaleTimeString()})`);
             // The switch firmware treats a trailing query marker as an HTTP query.
             // Keep it after the slash rather than encoding it into the path.
             const url = command.endsWith("?")
@@ -53,7 +70,7 @@
             try {
                 const response = await fetch(url, { cache: "no-store", signal: controller.signal });
                 const text = (await response.text()).trim();
-                setCommandField("last-response", `${text || "empty response"} (${new Date().toLocaleTimeString()})`);
+                setCommandField("last-response", `${text || "empty response"} (${time()})`);
                 if (!response.ok) {
                     const error = new Error(`HTTP ${response.status}: ${text || "empty response"}`);
                     error.connectionFailure = true;
@@ -66,7 +83,7 @@
                     error.connectionFailure = true;
                     error.message = "HTTP request timed out after 5 seconds.";
                 } else if (error.name === "TypeError") error.connectionFailure = true;
-                setCommandField("last-response", `${error.message} (${new Date().toLocaleTimeString()})`);
+                setCommandField("last-response", `${error.message} (${time()})`);
                 throw error;
             } finally {
                 clearTimeout(timeout);
@@ -83,7 +100,8 @@
     }
 
     function modelType() {
-        return portCount() === 6 ? "SP6T" : portCount() === 4 ? "SP4T" : "SPDT";
+        const ports = portCount();
+        return ports === 8 ? "SP8T" : ports === 6 ? "SP6T" : ports === 4 ? "SP4T" : "SPDT";
     }
 
     function switchName(index) {
@@ -143,12 +161,10 @@
             if (encoded === null) throw new Error("Could not parse SWPORT response.");
             for (let i = 0; i < count; i += 1) states.push((encoded >> i) & 1);
         } else {
-            let encoded = 0;
             for (let i = 0; i < count; i += 1) {
                 const value = parseSingleState(await send(`${type}${switchName(i)}:STATE?`));
                 if (value === null) throw new Error(`Could not parse switch ${switchName(i)} state.`);
                 states.push(value);
-                if (value > 0) encoded |= 1 << (i * (type === "SP4T" ? 4 : 6) + value - 1);
             }
         }
         renderControls(states);
@@ -192,6 +208,16 @@
             ["Password enabled", () => send(":ETHERNET:CONFIG:PWDENABLED?")],
             ["Power-up last state", () => send("ONPOWERUP:LASTSTATE?")]
         ];
+        if (isUsbConnection()) {
+            const ethernetRows = new Set([
+                "Active Ethernet configuration", "MAC address", "DHCP enabled", "Static IP address",
+                "Static subnet mask", "Static gateway", "HTTP port", "Telnet port", "SSH port",
+                "SSH login name", "Password enabled"
+            ]);
+            for (let index = rows.length - 1; index >= 0; index -= 1) {
+                if (ethernetRows.has(rows[index][0])) rows.splice(index, 1);
+            }
+        }
         if (switchCount() && portCount()) {
             const type = modelType();
             for (let index = 0; index < switchCount(); index += 1) {
@@ -223,12 +249,26 @@
         $("status-updated").textContent = `Updated ${new Date().toLocaleTimeString()}`;
     }
 
-    function fillConfigurationFromModel() {
-        const match = info.model.match(/RC-(\d+)(SPDT|SP4T|SP6T)/i);
-        if (!match) throw new Error(`Could not determine switch configuration from model ${info.model}.`);
-        $("switch-count").value = match[1];
+    function configurationFromModel(model) {
+        const match = model.match(/(?:RC-|USB-|ZTRC-)(\d+)(SPDT|SP4T|SP6T|SP8T)/i);
+        if (!match) throw new Error(`Could not determine switch configuration from model ${model}.`);
         const type = match[2].toUpperCase();
-        $("port-count").value = type === "SPDT" ? "2" : type === "SP4T" ? "4" : "6";
+        return {
+            switchCount: Number(match[1]),
+            portCount: type === "SPDT" ? 2 : type === "SP4T" ? 4 : type === "SP6T" ? 6 : 8
+        };
+    }
+
+    function modelNameFromResponse(response) {
+        const text = response.trim();
+        const match = text.match(/^MN[:=]\s*(.+)$/i);
+        return (match ? match[1] : text).trim();
+    }
+
+    function fillConfigurationFromModel() {
+        const configuration = configurationFromModel(info.model);
+        $("switch-count").value = String(configuration.switchCount);
+        $("port-count").value = String(configuration.portCount);
         renderControls();
     }
 
@@ -244,18 +284,73 @@
         } catch (error) { notice(error.message, "error"); }
     }
 
-    $("test-button").addEventListener("click", async () => {
-        $("test-button").disabled = true;
+    async function connectUsb() {
+        if (!navigator.hid) {
+            throw new Error("WebHID is unavailable. Use Chrome or Edge over HTTPS or localhost.");
+        }
+        const { VENDOR_ID, PRODUCT_ID, MiniCircuitsSwitchUSBClient } = window.MiniCircuitsSwitchUSB;
+        const authorized = await navigator.hid.getDevices();
+        const device = authorized.find((item) => item.vendorId === VENDOR_ID && item.productId === PRODUCT_ID)
+            || (await navigator.hid.requestDevice({ filters: [{ vendorId: VENDOR_ID, productId: PRODUCT_ID }] }))[0];
+        if (!device) throw new Error("No Mini-Circuits switch was selected.");
+        const client = new MiniCircuitsSwitchUSBClient(device);
+        try {
+            await client.connect();
+        } catch (error) {
+            if (error.name === "NotAllowedError") {
+                throw new Error("USB access was denied by the operating system. Allow access to the Mini-Circuits HID device and try again.");
+            }
+            throw error;
+        }
+        usbClient = client;
         try {
             const response = await send("MN?");
             connected = true;
             setConnectionStatus(`${response.replace(/^MN[=:]\s*/i, "")} (${new Date().toLocaleTimeString()})`);
             notice("", "");
         } catch (error) {
+            await client.disconnect();
+            usbClient = null;
+            throw error;
+        }
+    }
+
+    $("connection-type").addEventListener("change", async () => {
+        const usb = isUsbConnection();
+        $("ethernet-settings").hidden = usb;
+        $("test-button").textContent = usb ? "Connect USB device" : "Test connection";
+        let disconnectError = null;
+        if (usbClient) {
+            try { await usbClient.disconnect(); }
+            catch (error) { disconnectError = error; }
+            usbClient = null;
+        }
+        connected = false;
+        setConnectionStatus(disconnectError ? `Failed: ${disconnectError.message}` : "Not connected");
+        if (!usb) notice("");
+    });
+
+    $("test-button").addEventListener("click", async () => {
+        $("test-button").disabled = true;
+        try {
+            if (isUsbConnection()) {
+                if (usbClient) {
+                    const response = await send("MN?");
+                    connected = true;
+                    setConnectionStatus(`${response.replace(/^MN[=:]\s*/i, "")} (${new Date().toLocaleTimeString()})`);
+                } else {
+                    await connectUsb();
+                }
+            } else {
+                const response = await send("MN?");
+                connected = true;
+                setConnectionStatus(`${response.replace(/^MN[=:]\s*/i, "")} (${new Date().toLocaleTimeString()})`);
+            }
+        } catch (error) {
             if (error.connectionFailure) {
                 connected = false;
                 setConnectionStatus("Failed");
-            }
+            } else setConnectionStatus(error.message);
             notice(error.message, "error");
         } finally { $("test-button").disabled = false; }
     });
@@ -274,7 +369,7 @@
     });
     $("auto-identify-button").addEventListener("click", async () => {
         try {
-            info.model = (await send("MN?")).match(/MN[:=]\s*([^\s]+)/i)?.[1] || "";
+            info.model = modelNameFromResponse(await send("MN?"));
             fillConfigurationFromModel();
             notice(`Detected ${info.model}.`, "success");
             if (connected) await readStatus();
@@ -282,11 +377,18 @@
             if (error.connectionFailure) {
                 connected = false;
                 setConnectionStatus("Failed");
-            }
+            } else setConnectionStatus(error.message);
             notice(error.message, "error");
         }
     });
     $("switch-count").addEventListener("change", () => { if (portCount()) renderControls(); });
     $("port-count").addEventListener("change", () => { if (switchCount()) renderControls(); });
-    window.MiniCircuitsSwitch = { parseSingleState, modelType, switchName };
+    $("connection-type").dispatchEvent(new Event("change"));
+    window.MiniCircuitsSwitch = {
+        parseSingleState,
+        modelType,
+        switchName,
+        configurationFromModel,
+        modelNameFromResponse
+    };
 })();
